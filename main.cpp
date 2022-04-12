@@ -31,6 +31,10 @@ void read_matrix(QVector<QVector<fract>>& matrix){
                     }
                     oneEl.u_num = elMatI[0].toInt();
                     oneEl.d_num = elMatI[1].toInt();
+                    if(oneEl.d_num < 0){
+                        oneEl.d_num *= -1;
+                        oneEl.u_num *= -1;
+                    }
                 } else {
                     oneEl.u_num = elMat[i].toInt();
                     oneEl.d_num = 1;
@@ -107,18 +111,22 @@ void balancing_matrix(int flag, QVector<QVector<fract>> matrix, QVector<QVector<
     }
 }
 
-int main(int argc, char *argv[])
-{
-    QCoreApplication a(argc, argv);
-    QVector<QVector<fract>> matrix;
-    QVector<QVector<fract>> matrix_balanced;
-    fract f_last_col, f_last_row;
-    Fraction frct;
-    f_last_col.u_num = 0;
-    f_last_col.d_num = 1;
-    f_last_row.u_num = 0;
-    f_last_row.d_num = 1;
-    read_matrix(matrix);
+void cout_fract(fract f){
+    cout << f.u_num;
+    if(f.d_num != 1){
+        cout << "/" << f.d_num;
+    }
+}
+
+void calculate(QVector<QVector<fract>> &matrix, QVector<QVector<fract>> &matrix_balanced, Fraction frct){
+QVector<fract> dima;
+fract f_last_col, f_last_row, f;
+f.u_num = 0;
+f.d_num = 1;
+f_last_col.u_num = 0;
+f_last_col.d_num = 1;
+f_last_row.u_num = 0;
+f_last_row.d_num = 1;
     for(int i = 0; i < matrix.size(); i++){
         f_last_col = frct.sum(f_last_col, matrix[i][matrix[i].size() - 1]);
     }
@@ -126,6 +134,79 @@ int main(int argc, char *argv[])
         f_last_row = frct.sum(f_last_row, matrix[matrix.size() - 1][i]);
     }
     balancing_matrix(comparison(f_last_col, f_last_row), matrix, matrix_balanced, frct.abs(frct.sum(f_last_row, f_last_col, 1)));
+    qDebug("Balanced matrix:");
     cout_matrix(matrix_balanced);
+    matrix.clear();
+    for(int i = 0; i < matrix_balanced.size() - 1; i++){
+        dima.clear();
+        for(int j = 0; j < matrix_balanced[i].size() - 1; j++){
+            dima << f;
+        }
+        matrix << dima;
+    }
+    for(int row = 0, col = 0; row < matrix.size() && col < matrix[row].size();){
+        // [matrix_balanced.size() - 1][col] - потребности
+        // [row][matrix_balanced[row].size() - 1] - запас
+        f = frct.sum(matrix_balanced[row][matrix_balanced[row].size() - 1], matrix_balanced[matrix_balanced.size() - 1][col], 1);
+        if(f.u_num < 0){
+            matrix[row][col] = matrix_balanced[row][matrix_balanced[row].size() - 1];
+            matrix_balanced[row][matrix_balanced[row].size() - 1].u_num = 0;
+            matrix_balanced[matrix_balanced.size() - 1][col] = frct.abs(f);
+            row++;
+        }
+        if(f.u_num > 0){
+            matrix[row][col] = matrix_balanced[matrix_balanced.size() - 1][col];
+            matrix_balanced[matrix_balanced.size() - 1][col].u_num = 0;
+            matrix_balanced[row][matrix_balanced[row].size() - 1] = f;
+            col++;
+        }
+        if(f.u_num == 0){
+            matrix[row][col] = matrix_balanced[matrix_balanced.size() - 1][col];
+            matrix_balanced[matrix_balanced.size() - 1][col].u_num = 0;
+            matrix_balanced[row][matrix_balanced[row].size() - 1].u_num = 0;
+            col++;
+            row++;
+        }
+    }
+}
+
+void show_answer(QVector<QVector<fract>> matrix, QVector<QVector<fract>> matrix_balanced, Fraction frct){
+    fract f, ff;
+    f.u_num = 0;
+    f.d_num = 1;
+    cout << "F = ";
+    for(int i = 0; i < matrix.size(); i++){
+        for(int j = 0; j < matrix[i].size(); j++){
+            if(matrix[i][j].u_num != 0){
+                ff = frct.mult(matrix[i][j], matrix_balanced[i][j]);
+                f = frct.sum(f, ff);
+                cout_fract(ff);
+                if(j < matrix[i].size() - 1){
+                    cout << " + ";
+                }
+            }
+        }
+    }
+    cout << " = ";
+    cout_fract(f);
+    cout << endl;
+}
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication a(argc, argv);
+    QVector<QVector<fract>> matrix;
+    QVector<QVector<fract>> matrix_balanced;
+    Fraction frct;
+    read_matrix(matrix);
+    qDebug("Origin matrix:");
+    cout_matrix(matrix);
+    calculate(matrix, matrix_balanced, frct);
+    qDebug("Reference matrix:");
+    cout_matrix(matrix);
+    qDebug("Price transit:");
+    show_answer(matrix, matrix_balanced, frct);
     return a.exec();
 }
+
+
