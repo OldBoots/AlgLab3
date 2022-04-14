@@ -50,10 +50,16 @@ void read_matrix(QVector<QVector<fract>>& matrix){
 void cout_matrix(QVector<QVector<fract>> matrix){
     for(int i = 0; i < matrix.size(); i++){
         for(int j = 0; j <matrix[0].size(); j++){
-            if(matrix[i][j].d_num == 1){
-                cout<<matrix[i][j].u_num<<"\t";
-            }else
-                cout<<matrix[i][j].u_num<<"/"<<matrix[i][j].d_num<<"\t";
+            if(matrix[i][j].u_num > -10000){
+                if(matrix[i][j].d_num == 1){
+                    cout<<matrix[i][j].u_num<<"\t";
+                }else{
+                    cout<<matrix[i][j].u_num<<"/"<<matrix[i][j].d_num<<"\t";
+                }
+            } else {
+                cout << "--\t";
+            }
+
         }
         cout << endl << endl;
     }
@@ -100,7 +106,7 @@ void balancing_matrix(int flag, QVector<QVector<fract>> matrix, QVector<QVector<
                         dima << f;
                     }
                 }
-                    dima << matrix[i][j];
+                dima << matrix[i][j];
 
             }
             matrix_balanced << dima;
@@ -119,14 +125,14 @@ void cout_fract(fract f){
 }
 
 void calculate(QVector<QVector<fract>> &matrix, QVector<QVector<fract>> &matrix_balanced, Fraction frct){
-QVector<fract> dima;
-fract f_last_col, f_last_row, f;
-f.u_num = 0;
-f.d_num = 1;
-f_last_col.u_num = 0;
-f_last_col.d_num = 1;
-f_last_row.u_num = 0;
-f_last_row.d_num = 1;
+    QVector<fract> dima;
+    fract f_last_col, f_last_row, f;
+    f.u_num = -INFINITY;
+    f.d_num = 1;
+    f_last_col.u_num = 0;
+    f_last_col.d_num = 1;
+    f_last_row.u_num = 0;
+    f_last_row.d_num = 1;
     for(int i = 0; i < matrix.size(); i++){
         f_last_col = frct.sum(f_last_col, matrix[i][matrix[i].size() - 1]);
     }
@@ -144,29 +150,44 @@ f_last_row.d_num = 1;
         }
         matrix << dima;
     }
-    for(int row = 0, col = 0; row < matrix.size() && col < matrix[row].size();){
+    f.u_num = 0;
+    f.d_num = 1;
+    for(int i = 0, row = 0, col = 0; col < matrix[row].size() - 1; i++){
         // [matrix_balanced.size() - 1][col] - потребности
         // [row][matrix_balanced[row].size() - 1] - запас
+        cout << i << ") row = " << row << " col = " << col << " DDDD\n";
         f = frct.sum(matrix_balanced[row][matrix_balanced[row].size() - 1], matrix_balanced[matrix_balanced.size() - 1][col], 1);
         if(f.u_num < 0){
             matrix[row][col] = matrix_balanced[row][matrix_balanced[row].size() - 1];
             matrix_balanced[row][matrix_balanced[row].size() - 1].u_num = 0;
             matrix_balanced[matrix_balanced.size() - 1][col] = frct.abs(f);
-            row++;
+            if(row < matrix.size() - 1){
+                row++;
+            }
         }
+        qDebug("if1");
         if(f.u_num > 0){
             matrix[row][col] = matrix_balanced[matrix_balanced.size() - 1][col];
             matrix_balanced[matrix_balanced.size() - 1][col].u_num = 0;
             matrix_balanced[row][matrix_balanced[row].size() - 1] = f;
             col++;
         }
+        qDebug("if2");
         if(f.u_num == 0){
             matrix[row][col] = matrix_balanced[matrix_balanced.size() - 1][col];
             matrix_balanced[matrix_balanced.size() - 1][col].u_num = 0;
             matrix_balanced[row][matrix_balanced[row].size() - 1].u_num = 0;
             col++;
-            row++;
+            matrix[row][col].u_num = 0;
+            if(row < matrix.size() - 1){
+                row++;
+            }
         }
+        qDebug("if3");
+        cout << i << ") row = " << row << " ";
+        cout_fract(f);
+        cout << endl;
+        cout_matrix(matrix);
     }
 }
 
@@ -177,7 +198,7 @@ void show_answer(QVector<QVector<fract>> matrix, QVector<QVector<fract>> matrix_
     cout << "F = ";
     for(int i = 0; i < matrix.size(); i++){
         for(int j = 0; j < matrix[i].size(); j++){
-            if(matrix[i][j].u_num != 0){
+            if(matrix[i][j].u_num > -10000){
                 ff = frct.mult(matrix[i][j], matrix_balanced[i][j]);
                 f = frct.sum(f, ff);
                 cout_fract(ff);
